@@ -24,6 +24,7 @@ const useDataApi = (initialUrl, initialData) => {
     data: initialData,
   });
   console.log(`useDataApi called`);
+  // useEffect tracks our URLs and fetches from them
   useEffect(() => {
     console.log("useEffect Called");
     let didCancel = false;
@@ -94,26 +95,36 @@ const Products = (props) => {
   const addToCart = (e) => {
     let name = e.target.name;
     let item = items.filter((item) => item.name == name);
+    if (item[0].instock == 0) return;
+    item[0].instock--;
     console.log(`add to Cart ${JSON.stringify(item)}`);
     setCart([...cart, ...item]);
-    //doFetch(query);
   };
-  const deleteCartItem = (index) => {
-    let newCart = cart.filter((item, i) => index != i);
+  const deleteCartItem = (delIndex) => {
+    // this is the index in the cart not in the Product List
+
+    let newCart = cart.filter((item, i) => delIndex != i);
+    let target = cart.filter((item, index) => delIndex == index);
+    let newItems = items.map((item, index) => {
+      if (item.name == target[0].name) item.instock = item.instock + 1;
+      return item;
+    });
     setCart(newCart);
+    setItems(newItems);
   };
-  const photos = ["apple.png", "orange.png", "beans.png", "cabbage.png"];
+  // const photos = ["apple.png", "orange.png", "beans.png", "cabbage.png"];
 
   let list = items.map((item, index) => {
-    //let n = index + 1049;
-    //let url = "https://picsum.photos/id/" + n + "/50/50";
+    let n = index + 1049;
+    let url = "https://picsum.photos/id/" + n + "/50/50";
 
     return (
       <li key={index}>
-        <Image src={photos[index % 4]} width={70} roundedCircle></Image>
+        <Image src={url} width={70} roundedCircle></Image>
         <Button variant="primary" size="large">
-          {item.name}: {item.cost}
+          {item.name}: ${item.cost} ({item.instock} left)
         </Button>
+        <div>from {item.country}</div>
         <input name={item.name} type="submit" onClick={addToCart}></input>
       </li>
     );
@@ -126,7 +137,7 @@ const Products = (props) => {
           onClick={() => deleteCartItem(index)}
           eventKey={1 + index}
         >
-          $ {item.cost} from {item.country}
+          Remove?
         </Accordion.Body>
       </Accordion.Item>
     );
@@ -152,7 +163,16 @@ const Products = (props) => {
     return newTotal;
   };
   // TODO: implement the restockProducts function
-  const restockProducts = (url) => {};
+  const restockProducts = (url) => {
+    // make call to API
+    doFetch(url);
+    let newItems = data.map((item) => {
+      let { name, country, cost, instock } = item;
+      return { name, country, cost, instock };
+    });
+    // update existing items
+    setItems([...items, ...newItems]);
+  };
 
   return (
     <Container>
